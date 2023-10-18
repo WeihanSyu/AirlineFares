@@ -14,13 +14,21 @@ EXEC dbo.sp_add_jobstep
 	@database_name = N'AirFare';
 GO
 
+EXEC dbo.sp_add_jobstep
+	@job_name = N'Weekly Ticket Deletion',
+	@step_name = N'Delete kayak tickets',
+	@subsystem = N'TSQL',
+	@command = N'DELETE FROM kayak WHERE GETDATE() > DATEADD(week, 1, date_scrape);',
+	@database_name = N'AirFare';
+GO
+
 EXEC dbo.sp_add_schedule
 	@schedule_name = N'Once Every Mon 6:30AM',
 	@freq_type = 8,
 	@freq_interval = 2,
 	@freq_subday_type = 0x1,
 	@freq_recurrence_factor = 1,
-	@active_start_date = 20231002,
+	@active_start_date = 20231021,
 	@active_end_date = 20241007,
 	@active_start_time = 093000;
 GO
