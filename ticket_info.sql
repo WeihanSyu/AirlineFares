@@ -38,43 +38,72 @@ CREATE TABLE expedia (
 	expedia_id INT IDENTITY(1,1),
 	date_scrape DATETIME, -- SMALLDATETIME just DOES NOT WORK!
 	airline VARCHAR(40),
-	stops VARCHAR(40),
-	depart_date DATE,
-	depart_time clock12h, 
-	arrive_time clock12h,
+	ticket_type VARCHAR(15),
+	ticket_class VARCHAR(20),
+	adults INT,
+	children INT,
+	infant_lap INT,
+	infant_seat INT,
 	origin VARCHAR(3),
 	destination VARCHAR(3),
-	travel_time hour_min, 
+	going_stops VARCHAR(40),
+	going_date DATE,
+	going_time clock12h, 
+	going_arrive_time clock12h,
+	going_travel_time hour_min, 
 	return_date DATE,
 	price VARCHAR(15),
 	CONSTRAINT pk_expedia PRIMARY KEY(expedia_id)
 );
 GO
 
--- Create some custom data to test things out
-INSERT INTO expedia (date_scrape) 
-VALUES ('2023-9-7 11:00:00'),('2023-9-10 11:00:00'),('2023-9-11 11:00:00'),('2023-9-12 11:00:00');
+-- Create table for skyscanner flight tickets
+DROP TABLE IF EXISTS skyscanner;
+GO
+CREATE TABLE skyscanner (
+	skyscanner_id INT IDENTITY(1,1)
+);
+GO
 
-INSERT INTO expedia (date_scrape) 
-VALUES ('2023-9-13 11:00:00');
-
-SELECT * FROM expedia;
-
-DELETE FROM expedia WHERE date_scrape < '2023-9-10';
-
-
-DELETE FROM expedia 
-WHERE GETDATE() > DATEADD(week, 1, date_scrape);
-
-
+-- Create table for kayak flight tickets
+DROP TABLE IF EXISTS kayak;
+GO
+CREATE TABLE kayak (
+	kayak_id INT IDENTITY(1,1),
+	date_scrape DATETIME,
+	airline VARCHAR(40),
+	ticket_type VARCHAR(15),
+	ticket_class VARCHAR(20),
+	adults INT,
+	students INT,
+	youths INT,
+	children INT,
+	infant_seat INT,
+	infant_lap INT,
+	origin VARCHAR(3),
+	destination VARCHAR(3),
+	going_stops VARCHAR(40),
+	going_date DATE,
+	going_time clock12h,
+	going_arrive_time clock12h,
+	going_travel_time hour_min,
+	return_stops VARCHAR(40),
+	return_date DATE,
+	return_time clock12h,
+	return_arrive_time clock12h,
+	return_travel_time hour_min,
+	price VARCHAR(15),
+	CONSTRAINT pk_kayak PRIMARY KEY(kayak_id)
+);
+GO
 
 /* This trigger will activate if we make an insert with id > 1000
    Shifts every row and its id back until the oldest entry hits id = 1
    New entries will still be tacked on at the very end as they should
 */
-DROP TRIGGER IF EXISTS id_reset;
+DROP TRIGGER IF EXISTS id_reset_expedia;
 GO
-CREATE TRIGGER id_reset
+CREATE TRIGGER id_reset_expedia
 ON expedia
 AFTER INSERT
 AS
@@ -84,13 +113,41 @@ IF (SELECT MAX(expedia_id) FROM inserted) > 1000
 		DELETE FROM expedia;
 		DBCC CHECKIDENT (expedia, RESEED, 0);
 
-		INSERT INTO expedia (date_scrape, airline, stops, depart_time, arrive_time, 
-			origin, destination, travel_time, return_date, price) 
-		SELECT t.date_scrape, t.airline, t.stops, t.depart_time, t.arrive_time, 
-			t.origin, t.destination, t.travel_time, t.return_date, t.price
+		INSERT INTO expedia (date_scrape, airline, ticket_type, ticket_class, 
+			adults, children, infant_lap, infant_seat, origin, destination, going_stops, 
+			going_time, going_arrive_time, going_travel_time, return_date, price) 
+		SELECT t.date_scrape, t.airline, t.ticket_type, t.ticket_class, t.adults, 
+			t.children, t.infant_lap, t.infant_seat, t.origin, t.destination, t.going_stops, 
+			t.going_time, t.going_arrive_time, t.going_travel_time, t.return_date, t.price
 		FROM tmp_expedia t;
 
 		DROP TABLE tmp_expedia;
+	END;
+GO
+
+DROP TRIGGER IF EXISTS id_reset_kayak;
+GO
+CREATE TRIGGER id_reset_kayak
+ON kayak
+AFTER INSERT
+AS
+IF (SELECT MAX(kayak_id) FROM inserted) > 1000
+	BEGIN
+		SELECT * INTO tmp_kayak FROM kayak;
+		DELETE FROM kayak;
+		DBCC CHECKIDENT (kayak, RESEED, 0);
+
+		INSERT INTO kayak (date_scrape, airline, ticket_type, ticket_class, adults, students, 
+			youths, children, infant_seat, infant_lap, origin, destination, going_stops, 
+			going_date, going_time, going_arrive_time, going_travel_time, return_stops, 
+			return_date, return_time, return_arrive_time, return_travel_time, price) 
+		SELECT t.date_scrape, t.airline, t.ticket_type, t.ticket_class, t.adults, t.students, 
+			t.youths, t.children, t.infant_seat, t.infant_lap, t.origin, t.destination, t.going_stops, 
+			t.going_date, t.going_time, t.going_arrive_time, t.going_travel_time, t.return_stops, 
+			t.return_date, t.return_time, t.return_arrive_time, t.return_travel_time, t.price
+		FROM tmp_kayak t;
+
+		DROP TABLE tmp_kayak;
 	END;
 GO
 
@@ -99,3 +156,5 @@ GO
 -- We should think about "TRANSACTIONS"
 
 
+SELECT * FROM expedia;
+SELECT * FROM kayak;
