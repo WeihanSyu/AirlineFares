@@ -44,8 +44,8 @@ CREATE TABLE expedia (
 	children INT,
 	infant_lap INT,
 	infant_seat INT,
-	origin VARCHAR(3),
-	destination VARCHAR(3),
+	origin VARCHAR(50),
+	destination VARCHAR(50),
 	going_stops VARCHAR(40),
 	going_date DATE,
 	going_time clock12h, 
@@ -80,8 +80,8 @@ CREATE TABLE kayak (
 	children INT,
 	infant_seat INT,
 	infant_lap INT,
-	origin VARCHAR(3),
-	destination VARCHAR(3),
+	origin VARCHAR(50),
+	destination VARCHAR(50),
 	going_stops VARCHAR(40),
 	going_date DATE,
 	going_time clock12h,
@@ -151,10 +151,73 @@ IF (SELECT MAX(kayak_id) FROM inserted) > 1000
 	END;
 GO
 
+/* Use temporary tables to place freshly scraped data into which will 
+   immediately be used in a JOIN procedure below
+*/
+DROP PROC IF EXISTS dbo.tmp_ticket;
+GO
+CREATE PROC dbo.tmp_ticket
+AS
+BEGIN
+	DROP TABLE IF EXISTS dbo.##tmp_expedia;
+	SELECT * INTO ##tmp_expedia FROM expedia WHERE 0=1;
+		
+	DROP TABLE IF EXISTS dbo.##tmp_kayak;
+	SELECT * INTO ##tmp_kayak FROM kayak WHERE 0=1;
+END;
+GO
 
+/* Use a procedure to JOIN all tables immediately after runtime and it should use
+   FULL OUTER JOIN so that the scraper that gets the most rows will always get all
+   its data stored
+
+   Note: we should delete all_ticket table below after we upload it to Excel > Tableau
+*/
+DROP PROC IF EXISTS dbo.join_tbl;
+GO
+CREATE PROC dbo.join_tbl
+AS
+BEGIN
+	SELECT ep.date_scrape e_date_scrape, ep.airline e_airline, ep.ticket_type e_ticket_type,
+		ep.ticket_class e_ticket_class, ep.adults e_adults, ep.children e_children, 
+		ep.infant_lap e_infant_lap, ep.infant_seat e_infant_seat, ep.origin e_origin, 
+		ep.destination e_destination, ep.going_stops e_going_stops, ep.going_date e_going_date, 
+		ep.going_time e_going_time, ep.going_arrive_time e_going_arrive_time, 
+		ep.going_travel_time e_going_travel_time, ep.return_date e_return_date, ep.price e_price,
+		
+		ka.date_scrape k_date_scrape, ka.airline k_airline, ka.ticket_type k_ticket_type, 
+		ka.ticket_class k_ticket_class, ka.adults k_adults, ka.students k_students, 
+		ka.youths k_youths, ka.children k_children, ka.infant_seat k_infant_seat, 
+		ka.infant_lap k_infant_lap, ka.origin k_origin, ka.destination k_destination,
+		ka.going_stops k_going_stops, ka.going_date k_going_date, ka.going_time k_going_time, 
+		ka.going_arrive_time k_going_arrive_time, ka.going_travel_time k_going_travel_time,
+		ka.return_stops k_return_stops, ka.return_date k_return_date, ka.return_time k_return_time, 
+		ka.return_arrive_time k_return_arrive_time, ka.return_travel_time k_return_travel_time, 
+		ka.price k_price
+	INTO all_ticket
+	FROM (SELECT e.*, ROW_NUMBER() OVER (ORDER BY e.expedia_id) as seqnum
+		FROM ##tmp_expedia e
+		) ep FULL OUTER JOIN
+		(SELECT k.*, ROW_NUMBER() OVER (ORDER BY k.kayak_id) as seqnum
+		FROM ##tmp_kayak k
+		) ka
+	ON ep.seqnum = ka.seqnum
+END;
+GO
 
 -- We should think about "TRANSACTIONS"
 
 
 SELECT * FROM expedia;
 SELECT * FROM kayak;
+SELECT * FROM all_ticket;
+DELETE FROM expedia;
+DELETE FROM kayak;
+
+
+
+
+
+
+
+
