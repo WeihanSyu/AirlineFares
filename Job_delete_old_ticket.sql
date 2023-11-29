@@ -11,6 +11,7 @@ EXEC dbo.sp_add_jobstep
 	@step_name = N'Delete expedia tickets',
 	@subsystem = N'TSQL',
 	@command = N'DELETE FROM expedia WHERE GETDATE() > DATEADD(week, 1, date_scrape);',
+	@on_success_action = 3,
 	@database_name = N'AirFare';
 GO
 
@@ -19,6 +20,7 @@ EXEC dbo.sp_add_jobstep
 	@step_name = N'Delete kayak tickets',
 	@subsystem = N'TSQL',
 	@command = N'DELETE FROM kayak WHERE GETDATE() > DATEADD(week, 1, date_scrape);',
+	@on_success_action = 1,
 	@database_name = N'AirFare';
 GO
 
@@ -28,9 +30,9 @@ EXEC dbo.sp_add_schedule
 	@freq_interval = 2,
 	@freq_subday_type = 0x1,
 	@freq_recurrence_factor = 1,
-	@active_start_date = 20231021,
+	@active_start_date = 20231113,
 	@active_end_date = 20241007,
-	@active_start_time = 093000;
+	@active_start_time = 063000;
 GO
 
 EXEC dbo.sp_attach_schedule
