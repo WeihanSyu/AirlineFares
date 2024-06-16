@@ -40,16 +40,68 @@ we have an invalid input. Of course this means we checked out the websites befor
 * We first clean up the raw outputs and make sure they match the data type for their corresponding columns in our SQL tables.
 * Then we use *cursor.executemany* from *pyodbc* module to bulk insert our ticket info into SQL table.
 * Commit the code to end.
-**Note:** I don't think we need the insert into ***##tmp_table?***
+* **Note:** I don't think we need the insert into ***##tmp_table?***
 </details>
 
 <details>
 <summary><b>kayak_scrape.py</b></summary>
 
+**class kayak_flight:**
+* Pretty much the same methods as with our expedia scraper above. Only some small differences in how we find the elements and deal with the page.
+</details>
+
+<details>
+<summary><b>sql_to_excel_v2.py</b></summary>
+
+* This module will upload our airfare tables in SQL to an Excel sheet.
+* We use pandas dataframes to modify our data a bit, make them easier to use in a visualization.
+* TO avoid overwriting existing data in our Excel sheets, we first check if there is already data and if there is, we drop the *id* column and *concat* the new table data onto the old table.
+* Use *pd.ExcelWriter* with *mode = a* and *if_sheet_exists='replace'*, then add a new *id* column restarting from 0.
+* <details>
+  <summary>Code snippet</summary>
+
+  ```python
+  try:
+        existing_df = pd.read_excel('airfare_tables.xlsx', sheet_name='tickets')
+        existing_df = existing_df.drop(columns=(['id']))
+        df = pd.concat([existing_df, df], ignore_index=True)
+
+        df['going_date'] = pd.to_datetime(df['going_date']).dt.date
+        df['return_date'] = pd.to_datetime(df['return_date']).dt.date
+
+        with pd.ExcelWriter('airfare_tables.xlsx', 
+                        mode='a',
+                        if_sheet_exists='replace',
+        ) as writer:
+            df.to_excel(writer, sheet_name='tickets', index=True, index_label='id')
+  ```
+  </details>
 
 </details>
 
+## sql_scripts
+This folder contains all the SQL side setup.
+<details>
+<summary><b>ticket_info_v2.sql</b></summary>
 
+* Beyond the table set up, we also created triggers for each airfare table which checks after every new insert if the row_id is greater than 1000.
+* If it is, then we reset the auto incremented id to start back from 0.
+* We do this because auto incremented id's won't reset on it's own and will just keep getting larger and I don't want gigantic numbers stuck in the table.
+* Obviously this means we are also periodically deleting older entries otherwise we will go over 1000 actual entries and run into trouble with this trigger.
+</details>
 
+<details>
+<summary><b>job_delete_old_ticket.sql</b></summary>
 
+* As the filename suggests, this script creates a *SQL Job Agent* that will automatically delete entries older than a given timeframe (set by user - currently 1 week)
+* The script can be set to run starting at any future date and time chosen. As long as **SQL Server and SQL Server Agent** Services are running on the PC.
+</details>
 
+## jupyter_scripts
+We use jupyter notebooks for convenience and did most of the testing here so only *ticket_to_sql_to_excel_v2* is actually used in the program.
+<details>
+<summary><b>ticket_to_sql_to_excel_v2.ipynb</b></summary>
+
+* This file is the one that puts everything together and calls the scraper functions, stores it into SQL, and places the data into Excel sheets for Tableau use. Just make sure the other files are either on the same path, or have been added to path like we did.
+* ***args*** is where all the user inputs go and is the only thing that may be changed between runs besides ***ChromeOptions*** on rare occasions.
+* ***ChromeOptions*** is where we add the path to our *chromedriver* as well as set up any methods that can help with avoiding bot detection.
