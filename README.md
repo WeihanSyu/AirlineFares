@@ -3,6 +3,10 @@
 * Create a program that outputs airline ticket information from popular airfare sites based on end user inputs (travel class, location, dates, etc.).
 * The outputs will always give the top N cheapest available flights which will be compared visually through Tableau Dashboards.
 * The program mainly uses Python language with SQL Server as the backend.
+* **IMPORTANT:** The expedia and kayak scrapers no longer work due to website changes and added bot detection security which I can't get around.
+
+## Tableau Example Dashboard
+(https://public.tableau.com/shared/S8KZRGWHZ?:display_count=n&:origin=viz_share_link)
 
 ## python_modules
 This folder contains the main Python scripts that will web scrape the airfare information from various websites, store them in SQL Server, and upload into excel sheets for Tableau use.
