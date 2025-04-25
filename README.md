@@ -1,7 +1,8 @@
 # AirlineFares Project
 ## Summary
-* Create a program that outputs airline ticket information from popular airfare sites based on end user inputs (travel class, location, dates, etc.).
-* The outputs will always give the top N cheapest available flights which will be compared visually through Tableau Dashboards.
+* Create a program that scrapes airline ticket information from popular travel agency sites based on end user inputs (travel class, location, dates, etc.).
+* One run to get info from multiple sites.
+* The outputs will always give the top N cheapest available flights.
 * The program mainly uses Python language with SQL Server as the backend.
 * **IMPORTANT:** The expedia and kayak scrapers no longer work due to website changes and added bot detection security which I can't get around.
 
